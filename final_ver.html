@@ -1,0 +1,2560 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#f4f2ed" />
+    <title>Рельсовый контроль · ЕВРАЗ</title>
+    <style>
+:root {
+  --bg: #f4f2ed;
+  --surface: #fffefa;
+  --ink: #242925;
+  --muted: #636a63;
+  --line: #d9dcd3;
+  --orange: #c6461e;
+  --orangeLight: #fff0e8;
+  --green: #38664b;
+  --dark: #202924;
+  --mono: Consolas, "Courier New", monospace;
+  --sans: Arial, Helvetica, sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 var(--sans);
+}
+button,
+input {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  min-height: 44px;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+button,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #347fa8;
+  outline-offset: 4px;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+.app {
+  max-width: 1800px;
+  margin: auto;
+  padding: 0 32px 16px;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  height: 88px;
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  min-width: 0;
+}
+.brand picture {
+  display: flex;
+  flex-shrink: 0;
+}
+.brand-logo {
+  width: 168px;
+  height: auto;
+  display: block;
+}
+.brand h1 {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.7px;
+  line-height: 1.15;
+}
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.quiet,
+.iconbtn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 14px;
+}
+.quiet:hover,
+.iconbtn:hover {
+  background: #e8e9e0;
+  color: var(--ink);
+}
+.quiet svg,
+.iconbtn svg {
+  width: 20px;
+  height: 20px;
+}
+.iconbtn {
+  padding: 10px;
+  min-width: 44px;
+}
+.metrics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 18px 0 20px;
+}
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.metric-label {
+  font-size: 14px;
+  color: var(--muted);
+}
+.metric-value {
+  font: 27px/1.2 var(--mono);
+  letter-spacing: -1px;
+}
+.metric-value small {
+  font-size: 16px;
+  color: var(--muted);
+  letter-spacing: -0.5px;
+}
+.metric-level {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.machine {
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background: var(--dark);
+  border: 1px solid #354233;
+}
+.canvas-wrap {
+  height: clamp(340px, calc(100dvh - 388px), 780px);
+  position: relative;
+}
+.machine-status {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  z-index: 1;
+  color: #c8d5c0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  pointer-events: none;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a4c995;
+  box-shadow: 0 0 8px #a4c99544;
+}
+#lineCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+.line-progress {
+  position: absolute;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #899d7622;
+}
+.line-progress span {
+  height: 100%;
+  width: 0;
+  background: #e48d51;
+  display: block;
+}
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  background: #17211be0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 2;
+}
+.pause-overlay.show {
+  display: flex;
+}
+.pause-overlay h2 {
+  font-size: 30px;
+  color: #f4f6ee;
+  letter-spacing: -1px;
+}
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 0 16px;
+}
+.btn {
+  border: 1px solid var(--line);
+  padding: 12px 20px;
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.btn:hover {
+  background: #eaece3;
+}
+.btn.primary {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: white;
+}
+.btn.primary:hover {
+  background: #b63c17;
+}
+.btn.dark {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: #fff;
+}
+.btn.dark:hover {
+  background: #354239;
+}
+.btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.controls .btn {
+  min-width: 180px;
+}
+.controls .btn.primary {
+  min-width: 210px;
+}
+.shortcut {
+  font: 11px var(--mono);
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 0 4px;
+  opacity: 0.55;
+  margin-left: 4px;
+}
+.pause-count {
+  font: 12px var(--mono);
+  color: var(--muted);
+  margin-left: 4px;
+}
+.history-dock {
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+}
+.history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.history-heading h2 {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.history-heading h2 span {
+  font: 12px var(--mono);
+  color: var(--muted);
+  margin-left: 4px;
+}
+.text-button {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 8px 0 8px 18px;
+}
+.text-button:hover {
+  color: var(--orange);
+}
+.history {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  min-height: 76px;
+  padding: 2px 2px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #bbc2b6 transparent;
+}
+.rail-card {
+  background: #eef0e8;
+  border: 1px solid #d9dfd1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  width: 126px;
+  flex: 0 0 126px;
+  text-align: left;
+  color: var(--ink);
+  position: relative;
+}
+.rail-card:hover {
+  border-color: #7a8c75;
+  background: #e9ede1;
+}
+.rail-card.selected {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px var(--orange);
+}
+.rail-card.checked {
+  border-color: #37624c;
+  background: #e9f0e3;
+}
+.rail-card canvas {
+  width: 100%;
+  height: 30px;
+  display: block;
+  margin-top: 5px;
+}
+.card-number {
+  font: 12px var(--mono);
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+}
+.empty {
+  color: var(--muted);
+  font-size: 14px;
+  margin: auto;
+  text-align: center;
+}
+.footnote {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+.eyebrow {
+  font: 12px/1.4 var(--mono);
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.eyebrow:empty {
+  display: none;
+}
+.orange-text {
+  color: var(--orange);
+}
+.log-row {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.log-time {
+  font: 12px/1.9 var(--mono);
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.log-row.good .log-text {
+  color: #2e6845;
+}
+.log-row.bad .log-text {
+  color: #a83f25;
+}
+.journal-entries {
+  max-height: 55vh;
+  overflow: auto;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #101b15b8;
+  backdrop-filter: blur(7px);
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: auto;
+}
+.dialog-backdrop.open {
+  display: flex;
+}
+.dialog {
+  background: var(--bg);
+  border: 1px solid #d8ded0;
+  border-radius: 14px;
+  width: min(860px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  box-shadow: 0 28px 90px #0005;
+}
+.dialog.wide {
+  width: min(1040px, 100%);
+}
+.dialog-header {
+  padding: 23px 28px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.dialog-header h2 {
+  font-size: 24px;
+  letter-spacing: -0.8px;
+  line-height: 1.25;
+}
+.dialog-header .eyebrow {
+  margin-bottom: 6px;
+}
+.dialog-body {
+  padding: 24px 28px 28px;
+}
+.dialog-close {
+  min-width: 44px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 23px;
+  font-weight: 400;
+  color: var(--ink);
+}
+.dialog-close:hover {
+  background: #e3e7db;
+}
+.welcome-layout {
+  display: grid;
+  grid-template-columns: 1fr 0.9fr;
+  gap: 30px;
+}
+.welcome-title {
+  font-size: 42px;
+  letter-spacing: -1.7px;
+  line-height: 1.09;
+  margin: 12px 0 18px;
+  max-width: 420px;
+}
+.welcome-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 410px;
+}
+.orange-text {
+  color: var(--orange);
+}
+.welcome-art {
+  background: var(--dark);
+  border-radius: 9px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  min-height: 235px;
+  color: #e8eee2;
+}
+.art-label {
+  font: 11px var(--mono);
+  letter-spacing: 1.5px;
+  color: #b2c0ad;
+}
+.art-track {
+  margin: 20px 0 40px;
+  transform: rotate(-10deg);
+  display: grid;
+  gap: 17px;
+}
+.art-rail {
+  height: 40px;
+  background: repeating-linear-gradient(0deg, #8b988c 0px, #c8cfc1 2px, #9eaa9a 3px, #b7c0ae 5px);
+  box-shadow:
+    0 7px 0 #465544,
+    0 9px 0 #111c16;
+  border-radius: 1px;
+  position: relative;
+}
+.art-rail:after {
+  content: "";
+  position: absolute;
+  width: 50px;
+  height: 5px;
+  background: #394538;
+  top: 14px;
+  left: 57%;
+  border-radius: 50%;
+  transform: rotate(-15deg);
+  box-shadow: 0 1px 0 #dae0cf;
+}
+.art-ring {
+  position: absolute;
+  left: 54%;
+  top: 47px;
+  width: 78px;
+  height: 160px;
+  border: 2px solid #eab27b;
+  border-radius: 40px;
+  transform: rotate(-10deg);
+}
+.art-foot {
+  font: 11px/1.7 var(--mono);
+  color: #c1cdb8;
+  margin-top: 18px;
+}
+.intro-steps {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+}
+.intro-step {
+  flex: 1;
+  font-size: 12px;
+  color: var(--muted);
+}
+.intro-step strong {
+  display: block;
+  color: var(--ink);
+  font: 12px var(--mono);
+  margin-bottom: 4px;
+}
+.level-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 26px;
+}
+.level-choice {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 13px 12px;
+  text-align: left;
+  min-width: 0;
+  color: var(--ink);
+}
+.level-choice.active {
+  border-color: var(--orange);
+  background: var(--orangeLight);
+  box-shadow: 0 0 0 1px var(--orange);
+}
+.level-choice .eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.8px;
+}
+.level-choice b {
+  display: block;
+  font-size: 14px;
+  margin: 6px 0 3px;
+}
+.level-choice small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.dialog-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+.dialog-actions .btn {
+  min-width: 150px;
+}
+.start-hint {
+  font-size: 12px;
+  color: var(--muted);
+  max-width: 270px;
+}
+.help-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+.help-block h3 {
+  font-size: 17px;
+  margin-bottom: 9px;
+}
+.help-block p,
+.help-block li {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.help-block ul {
+  padding-left: 18px;
+  margin: 8px 0;
+}
+.notice {
+  padding: 12px 15px;
+  border: 1px solid #d8dfcf;
+  background: #eaf0e3;
+  color: #3b5338;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 16px 0;
+}
+.notice.warning {
+  background: #fff0e5;
+  border-color: #e9c7ae;
+  color: #8e3c1d;
+}
+.inspect-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.inspect-area {
+  height: 255px;
+  background: #202924;
+  border-radius: 7px;
+  overflow: hidden;
+  position: relative;
+}
+.inspect-area canvas {
+  height: 100%;
+  width: 100%;
+  cursor: crosshair;
+  display: block;
+}
+.inspect-legend {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.legend-ring {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--orange);
+  border-radius: 50%;
+  vertical-align: -2px;
+  margin-right: 6px;
+}
+.inspect-nav {
+  display: flex;
+  gap: 8px;
+}
+.alarm-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  max-height: 294px;
+  overflow: auto;
+  padding: 2px;
+}
+.alarm-grid .rail-card {
+  width: auto;
+}
+.alarm-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+.alarm-toolbar b {
+  color: var(--orange);
+}
+.reasons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+}
+.reason {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  display: flex;
+  gap: 10px;
+  align-items: start;
+  cursor: pointer;
+  font-size: 14px;
+}
+.reason:has(input:checked) {
+  border-color: var(--orange);
+  background: var(--orangeLight);
+}
+.reason input {
+  accent-color: var(--orange);
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  margin: 3px 0 0;
+}
+.reason small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 3px;
+}
+.feedback {
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 21px;
+}
+.result-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding-bottom: 25px;
+  border-bottom: 1px solid var(--line);
+}
+.result-score {
+  font: 64px/1 var(--mono);
+  letter-spacing: -5px;
+}
+.result-score-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.result-grade {
+  text-align: right;
+}
+.result-grade h3 {
+  font-size: 25px;
+  letter-spacing: -0.6px;
+}
+.result-grade p {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 320px;
+  margin-top: 8px;
+}
+.result-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 22px 0;
+}
+.result-stat {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 15px;
+}
+.result-stat b {
+  display: block;
+  font: 25px var(--mono);
+}
+.result-stat span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.records {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  margin-top: 18px;
+}
+.records h3 {
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+.record-row {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+  padding: 9px 0;
+}
+.record-row b {
+  font-family: var(--mono);
+  margin-left: auto;
+}
+.name-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.name-form input {
+  min-width: 0;
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #adb9a5;
+  background: var(--surface);
+  border-radius: 6px;
+  color: var(--ink);
+}
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translate(-50%, 18px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 40;
+  background: #24362a;
+  color: white;
+  box-shadow: 0 8px 24px #0003;
+  border: 1px solid #71826d;
+  border-radius: 9px;
+  padding: 14px 20px;
+  font-size: 14px;
+  width: max-content;
+  max-width: min(520px, calc(100% - 32px));
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  text-align: center;
+}
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.toast.bad {
+  background: #653321;
+  border-color: #b96e53;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191f1b;
+    --surface: #242c26;
+    --ink: #f0f2ea;
+    --muted: #b3beae;
+    --line: #475245;
+    --orange: #f0875a;
+    --orangeLight: #3e2d22;
+    --green: #a2c69b;
+  }
+  .btn.primary {
+    color: #19241b;
+  }
+  .btn.primary:hover {
+    background: #e9a079;
+    color: #19241b;
+  }
+  .quiet:hover,
+  .iconbtn:hover,
+  .btn:hover {
+    background: #364132;
+  }
+  .rail-card {
+    background: #2d3729;
+    border-color: #4f5d45;
+    color: #f0f2ea;
+  }
+  .rail-card:hover {
+    background: #3b4735;
+  }
+  .rail-card.checked {
+    background: #354b30;
+    border-color: #a4c790;
+  }
+  .notice {
+    background: #2b3b26;
+    border-color: #526749;
+    color: #d2e4c7;
+  }
+  .notice.warning {
+    background: #422f23;
+    border-color: #845c41;
+    color: #ffd5b8;
+  }
+  .dialog-close:hover {
+    background: #3a4733;
+  }
+  .log-row.good .log-text {
+    color: #a6d49d;
+  }
+  .log-row.bad .log-text {
+    color: #f3a080;
+  }
+  .inspect-legend {
+    color: var(--muted);
+  }
+}
+@media (max-width: 1100px) {
+  .app {
+    padding: 0 24px 14px;
+  }
+  .topbar {
+    height: 76px;
+  }
+  .brand {
+    gap: 24px;
+  }
+  .brand-logo {
+    width: 154px;
+  }
+  .brand h1 {
+    font-size: 20px;
+  }
+  .metrics {
+    gap: 18px;
+  }
+  .metric {
+    gap: 10px;
+  }
+  .metric-value {
+    font-size: 25px;
+  }
+  .metric-level {
+    font-size: 15px;
+  }
+  .canvas-wrap {
+    height: clamp(340px, calc(100dvh - 368px), 720px);
+  }
+}
+@media (max-width: 760px) {
+  .app {
+    padding: 0 20px 12px;
+  }
+  .brand {
+    gap: 20px;
+  }
+  .brand-logo {
+    width: 142px;
+  }
+  .brand h1 {
+    font-size: 18px;
+  }
+  .help-button span {
+    display: none;
+  }
+  .metrics {
+    gap: 16px;
+    padding: 16px 0;
+  }
+  .metric {
+    display: grid;
+    gap: 3px;
+  }
+  .metric-label {
+    font-size: 12px;
+  }
+  .metric-value {
+    font-size: 24px;
+  }
+  .metric-level {
+    font-size: 14px;
+  }
+  .controls .btn {
+    min-width: 150px;
+  }
+  .controls .btn.primary {
+    min-width: 170px;
+  }
+  .controls .shortcut {
+    display: none;
+  }
+  .welcome-layout {
+    gap: 20px;
+  }
+  .welcome-title {
+    font-size: 34px;
+  }
+  .alarm-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+@media (max-width: 580px) {
+  .app {
+    padding: 0 16px 12px;
+  }
+  .topbar {
+    height: 72px;
+    gap: 6px;
+  }
+  .brand {
+    gap: 16px;
+  }
+  .brand-logo {
+    width: 120px;
+  }
+  .brand h1 {
+    font-size: 15px;
+    line-height: 1.2;
+    max-width: 100px;
+    letter-spacing: -0.4px;
+  }
+  .top-actions {
+    gap: 0;
+  }
+  .quiet,
+  .iconbtn {
+    padding: 10px;
+    min-width: 44px;
+  }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 16px 0 18px;
+  }
+  .metric {
+    min-width: 0;
+    gap: 5px;
+  }
+  .metric-value {
+    font-size: 22px;
+    letter-spacing: -1px;
+  }
+  .metric-value small {
+    font-size: 13px;
+  }
+  .metric-label {
+    font-size: 12px;
+  }
+  .metric-level {
+    font-size: 13px;
+    line-height: 1.15;
+    white-space: normal;
+    max-width: 90px;
+    min-height: 27px;
+    display: flex;
+    align-items: center;
+  }
+  .machine {
+    border-radius: 8px;
+  }
+  .canvas-wrap {
+    height: clamp(300px, calc(100svh - 374px), 600px);
+  }
+  .machine-status {
+    left: 16px;
+    top: 16px;
+    font-size: 12px;
+  }
+  .controls {
+    gap: 8px;
+    padding: 14px 0;
+  }
+  .controls .btn,
+  .controls .btn.primary {
+    min-width: 0;
+    flex: 1;
+    padding: 12px 7px;
+    font-size: 13px;
+    gap: 6px;
+  }
+  .controls .btn svg {
+    display: none;
+  }
+  .pause-count {
+    font-size: 11px;
+    margin-left: 0;
+  }
+  .history {
+    gap: 8px;
+    min-height: 72px;
+  }
+  .history .rail-card {
+    width: 112px;
+    flex-basis: 112px;
+    padding: 7px 9px;
+  }
+  .history-heading h2,
+  .text-button {
+    font-size: 12px;
+  }
+  .history-heading h2 span {
+    font-size: 11px;
+  }
+  .toast {
+    top: 16px;
+    bottom: auto;
+    font-size: 13px;
+    padding: 12px 16px;
+  }
+  .dialog-backdrop {
+    padding: 10px;
+  }
+  .dialog {
+    max-height: calc(100dvh - 20px);
+    border-radius: 10px;
+  }
+  .dialog-header {
+    padding: 18px;
+  }
+  .dialog-header h2 {
+    font-size: 21px;
+  }
+  .dialog-body {
+    padding: 18px;
+  }
+  .welcome-layout {
+    grid-template-columns: 1fr;
+  }
+  .welcome-title {
+    font-size: 36px;
+    margin-top: 4px;
+  }
+  .welcome-art {
+    min-height: 165px;
+    padding: 18px;
+  }
+  .art-track {
+    gap: 12px;
+    margin: 13px 0 36px;
+  }
+  .art-rail {
+    height: 22px;
+  }
+  .art-rail:after {
+    top: 8px;
+  }
+  .art-ring {
+    top: 42px;
+    height: 118px;
+  }
+  .art-foot {
+    margin-top: 5px;
+  }
+  .intro-steps {
+    margin-top: 18px;
+  }
+  .welcome-text {
+    font-size: 14px;
+  }
+  .level-picker {
+    grid-template-columns: 1fr 1fr;
+    margin-top: 20px;
+  }
+  .level-choice {
+    padding: 10px;
+  }
+  .dialog-actions {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .dialog-actions .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+  .start-hint {
+    width: 100%;
+    max-width: none;
+    order: 2;
+  }
+  .help-grid {
+    grid-template-columns: 1fr;
+  }
+  .inspect-bar {
+    font-size: 12px;
+  }
+  .inspect-area {
+    height: 230px;
+  }
+  .alarm-grid {
+    grid-template-columns: repeat(3, 1fr);
+    max-height: 250px;
+    gap: 7px;
+  }
+  .alarm-grid .rail-card {
+    padding: 7px;
+  }
+  .reasons {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .result-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .result-hero {
+    align-items: start;
+  }
+  .result-score {
+    font-size: 49px;
+  }
+  .result-grade h3 {
+    font-size: 19px;
+  }
+  .result-grade p {
+    font-size: 12px;
+    max-width: 170px;
+  }
+  .inspect-nav .btn {
+    padding: 10px;
+    min-width: 44px;
+  }
+  .footnote {
+    font-size: 11px;
+  }
+  .alarm-toolbar {
+    font-size: 12px;
+  }
+  .record-row {
+    font-size: 12px;
+  }
+  .log-row {
+    font-size: 13px;
+    gap: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* v3: concise dialogs and the championship signature. */
+.brand{gap:22px}
+.brand-divider{width:1px;height:32px;flex:0 0 1px;background:var(--line)}
+.brand-caption{font-size:14px;line-height:1.45;white-space:nowrap;font-weight:400;letter-spacing:0}
+.dialog[data-kind="result"]{width:min(680px,100%)}
+.dialog[data-kind="result"] .dialog-header{padding:24px 28px 20px}
+.dialog[data-kind="result"] .dialog-header h2{font-size:22px}
+.compact-score{text-align:center;padding:8px 0 28px}
+.compact-score-label{font-size:14px;color:var(--muted);margin-bottom:12px}
+.compact-score .result-score{font:64px/1.05 var(--mono);letter-spacing:-4px}
+.compact-result-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;padding:24px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.compact-result-stat b{display:block;font:30px/1.15 var(--mono);letter-spacing:-1px;margin-bottom:8px;font-weight:400}
+.compact-result-stat span{display:block;color:var(--muted);font-size:14px;line-height:1.45}
+.compact-result-actions,.end-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
+.compact-result-actions .btn,.end-actions .btn{min-width:0}
+.dialog[data-kind="help"]{width:min(900px,100%)}
+.concise-help{gap:28px 32px}
+.concise-help .help-block h3{font-size:17px;margin-bottom:10px}
+.concise-help .help-block p{font-size:14px;line-height:1.65}
+.concise-help .help-detail{margin-top:12px}
+.dialog[data-kind="end"]{width:min(500px,100%)}
+.dialog[data-kind="end"] .dialog-header{display:none}
+.dialog[data-kind="end"] .dialog-body{padding:24px}
+.end-actions{margin:0}
+@media(max-width:760px){.brand{gap:16px}.brand-caption{font-size:12px}.brand-divider{height:30px}}
+@media(max-width:580px){.brand{gap:10px}.brand-caption{font-size:10.5px;line-height:1.5}.brand-divider{height:28px}.dialog[data-kind="result"] .dialog-header{padding:20px 20px 18px}.dialog[data-kind="result"] .dialog-body{padding:20px}.dialog[data-kind="result"] .dialog-header h2{font-size:21px}.compact-score{padding:4px 0 24px}.compact-score .result-score{font-size:56px;letter-spacing:-3px}.compact-result-stats{grid-template-columns:1fr 1fr;gap:24px 20px;padding:24px 0}.compact-result-stat b{font-size:28px}.compact-result-actions{gap:10px;margin-top:20px}.compact-result-actions .btn{padding:12px 10px;font-size:14px}.dialog[data-kind="end"] .dialog-body{padding:20px}.end-actions{grid-template-columns:1fr;gap:10px}.end-actions .btn{min-height:48px}.concise-help{gap:24px}.concise-help .help-block h3{font-size:16px}.concise-help .help-block p{font-size:14px}}
+@media(max-width:380px){.brand-logo{width:100px}.brand{gap:8px}.brand-caption{font-size:10px}}
+
+</style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <picture
+            ><source media="(prefers-color-scheme: dark)" srcset="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4gPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDYiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyMDYgMzIiIGZpbGw9Im5vbmUiPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMF8zN18xMzg2KSI+PHBhdGggZD0iTTMyLjE4NTEgMC4wMDA5OTk0NTFIMFY2LjM5ODA3SDMyLjE4NTFWMC4wMDA5OTk0NTFaIiBmaWxsPSIjRkJCOTJGIj48L3BhdGg+PHBhdGggZD0iTTMyLjE4NTEgMTIuNzk0MkgwVjE5LjE5MTNIMzIuMTg1MVYxMi43OTQyWiIgZmlsbD0iI0VFNzkxOCI+PC9wYXRoPjxwYXRoIGQ9Ik0zMi4xODUxIDI1LjU4ODRIMFYzMS45ODU2SDMyLjE4NTFWMjUuNTg4NFoiIGZpbGw9IiNFNDIyMTMiPjwvcGF0aD48cGF0aCBkPSJNMTU3LjI1NiA2LjQwMzE0TDE2Mi4zNCAxOS4xODQ4SDE1Mi4xNThMMTU3LjI1NiA2LjQwMzE0Wk0xNTIuMzI0IDAuMDAzNjIzOTZMMTM5Ljk2OCAzMS45ODkxSDE0Ny4zNDdMMTQ5Ljc2NCAyNS41Nzc3TDE2NC43NDkgMjUuNTg0TDE2Ny4xNjUgMzEuOTg5MUgxNzQuNTA0TDE2MS40MzEgMC4wMDM2MjM5NkgxNTIuMzI0WiIgZmlsbD0iI0Y0RjJFRCI+PC9wYXRoPjxwYXRoIGQ9Ik00NS4wNTU3IDAuMDAzNjIzOTZWMzEuOTg5MUg3MS40NjE5VjI1LjU5NjFMNTEuNTEwNyAyNS41ODVWMTkuMTkxOEg3MS40NjE5VjEyLjc4MjNINTEuNTEwN1Y2LjQwNTM4TDcxLjQ2MTkgNi4zODM5NVYwLjAwMzYyMzk2SDQ1LjA1NTdaIiBmaWxsPSIjRjRGMkVEIj48L3BhdGg+PHBhdGggZD0iTTE3OC45NjUgMzEuOTYzN0gxOTEuNDQ1SDE5Ni4zOThDMjAxLjU5NiAzMS45NjM3IDIwNS45OTkgMjguNDUyIDIwNS45OTkgMjIuNDY5OEMyMDUuOTk5IDIwLjAwNDIgMjA1LjA0NyAxNy41ODUgMjAyLjA3NyAxNS45ODM3QzIwNS41MTUgMTMuOTk1MiAyMDUuOTk5IDExLjk2MzIgMjA1Ljk5OSA5LjQ5NzY2QzIwNS45OTkgNC4yOTM4OSAyMDEuNTk2IDAuMDAzNjIzOTYgMTk2LjM5OCAwLjAwMzYyMzk2SDE5MS40NDVIMTc4Ljk2NVY2LjUwODQ5SDE5Ni4wOThDMTk3Ljg0NyA2LjUwODQ5IDE5OS4yNjQgNy45MTcxOSAxOTkuMjY0IDkuNjU0OTRDMTk5LjI2NCAxMS4zOTI3IDE5Ny44NDcgMTIuODAxNSAxOTYuMDk4IDEyLjgwMTVIMTkyLjY3N0gxODIuMTc1VjE5LjE2NThIMTkyLjY3N0gxOTYuMDk4QzE5Ny44NDcgMTkuMTY1OCAxOTkuMjY0IDIwLjU3NDYgMTk5LjI2NCAyMi4zMTIzQzE5OS4yNjQgMjQuMDUgMTk3Ljg0NyAyNS40NTg4IDE5Ni4wOTggMjUuNDU4OEgxNzguOTY1VjMxLjk2MzdIMTc4Ljk2NVoiIGZpbGw9IiNGNEYyRUQiPjwvcGF0aD48cGF0aCBkPSJNMTMxLjA2NyAwLjAwMzYyMzk2SDEyNi4xMTRIMTEzLjMxM1YzMS45ODkxSDExOS43NTNWMTkuMTY1OUgxMjcuMzQ3SDEzMS4wNjdDMTM2LjM5MiAxOS4xNjU5IDE0MC43MDggMTQuODc2MyAxNDAuNzA4IDkuNTg0NzhDMTQwLjcwOCA0LjI5MzI1IDEzNi4zOTIgMC4wMDM2MjM5NiAxMzEuMDY3IDAuMDAzNjIzOTZaTTEzMC43NjcgMTIuODAxNUgxMTkuNzQ0VjYuNTA4NDlIMTMwLjc2N0MxMzIuNTE2IDYuNTA4NDkgMTMzLjkzMyA3LjkxNzE5IDEzMy45MzMgOS42NTQ5NEMxMzMuOTMzIDExLjM5MjcgMTMyLjUxNiAxMi44MDE1IDEzMC43NjcgMTIuODAxNVoiIGZpbGw9IiNGNEYyRUQiPjwvcGF0aD48cGF0aCBkPSJNMTAyLjQ4NSAxNS45ODM3QzEwNS45MjMgMTMuOTk1MiAxMDYuNDA3IDExLjk2MzIgMTA2LjQwNyA5LjQ5NzY2QzEwNi40MDcgNC4yOTM4OSAxMDIuMDAzIDAuMDAzNjIzOTYgOTYuODA1NCAwLjAwMzYyMzk2TDk2LjgwNTYgMC4wMDM3MzA1OUM5Ni44MDQxIDAuMDAzNzMwNTkgOTYuODAyOSAwLjAwMzYyMzk2IDk2LjgwMTUgMC4wMDM2MjM5Nkg3OS4yMDc5VjMxLjk2MzdIOTcuMTIzM0MxMDIuMzIxIDMxLjk2MzcgMTA2LjcyNSAyOC40NTIgMTA2LjcyNSAyMi40Njk4QzEwNi43MjUgMjAuMDA0MiAxMDUuNDU1IDE3LjU4NTEgMTAyLjQ4NSAxNS45ODM3Wk04NS42Mzk0IDYuNTA4NDlIOTYuNTAxNkM5OC4yNTAyIDYuNTA4NDkgOTkuNjY3NiA3LjkxNzE5IDk5LjY2NzYgOS42NTQ5NEM5OS42Njc2IDExLjM5MjcgOTguMjUwMiAxMi44MDE1IDk2LjUwMTYgMTIuODAxNUg5My4yNDE3SDg1LjYzOTRWNi41MDg0OVpNOTYuODIzNSAyNS40NTg4SDg1LjYzOTRWMTkuMTY1OEg5Ni44MjM0Qzk4LjU3MjEgMTkuMTY1OCA5OS45ODk1IDIwLjU3NDYgOTkuOTg5NSAyMi4zMTIzQzk5Ljk4OTUgMjQuMDUgOTguNTcyMSAyNS40NTg4IDk2LjgyMzUgMjUuNDU4OFoiIGZpbGw9IiNGNEYyRUQiPjwvcGF0aD48L2c+PGRlZnM+PGNsaXBQYXRoIGlkPSJjbGlwMF8zN18xMzg2Ij48cmVjdCB3aWR0aD0iMjA2IiBoZWlnaHQ9IjMyIiBmaWxsPSJ3aGl0ZSI+PC9yZWN0PjwvY2xpcFBhdGg+PC9kZWZzPjwvc3ZnPiA=" />
+            <img class="brand-logo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4gPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDYiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyMDYgMzIiIGZpbGw9Im5vbmUiPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMF8zN18xMzg2KSI+PHBhdGggZD0iTTMyLjE4NTEgMC4wMDA5OTk0NTFIMFY2LjM5ODA3SDMyLjE4NTFWMC4wMDA5OTk0NTFaIiBmaWxsPSIjRkJCOTJGIj48L3BhdGg+PHBhdGggZD0iTTMyLjE4NTEgMTIuNzk0MkgwVjE5LjE5MTNIMzIuMTg1MVYxMi43OTQyWiIgZmlsbD0iI0VFNzkxOCI+PC9wYXRoPjxwYXRoIGQ9Ik0zMi4xODUxIDI1LjU4ODRIMFYzMS45ODU2SDMyLjE4NTFWMjUuNTg4NFoiIGZpbGw9IiNFNDIyMTMiPjwvcGF0aD48cGF0aCBkPSJNMTU3LjI1NiA2LjQwMzE0TDE2Mi4zNCAxOS4xODQ4SDE1Mi4xNThMMTU3LjI1NiA2LjQwMzE0Wk0xNTIuMzI0IDAuMDAzNjIzOTZMMTM5Ljk2OCAzMS45ODkxSDE0Ny4zNDdMMTQ5Ljc2NCAyNS41Nzc3TDE2NC43NDkgMjUuNTg0TDE2Ny4xNjUgMzEuOTg5MUgxNzQuNTA0TDE2MS40MzEgMC4wMDM2MjM5NkgxNTIuMzI0WiIgZmlsbD0iYmxhY2siPjwvcGF0aD48cGF0aCBkPSJNNDUuMDU1NyAwLjAwMzYyMzk2VjMxLjk4OTFINzEuNDYxOVYyNS41OTYxTDUxLjUxMDcgMjUuNTg1VjE5LjE5MThINzEuNDYxOVYxMi43ODIzSDUxLjUxMDdWNi40MDUzOEw3MS40NjE5IDYuMzgzOTVWMC4wMDM2MjM5Nkg0NS4wNTU3WiIgZmlsbD0iYmxhY2siPjwvcGF0aD48cGF0aCBkPSJNMTc4Ljk2NSAzMS45NjM3SDE5MS40NDVIMTk2LjM5OEMyMDEuNTk2IDMxLjk2MzcgMjA1Ljk5OSAyOC40NTIgMjA1Ljk5OSAyMi40Njk4QzIwNS45OTkgMjAuMDA0MiAyMDUuMDQ3IDE3LjU4NSAyMDIuMDc3IDE1Ljk4MzdDMjA1LjUxNSAxMy45OTUyIDIwNS45OTkgMTEuOTYzMiAyMDUuOTk5IDkuNDk3NjZDMjA1Ljk5OSA0LjI5Mzg5IDIwMS41OTYgMC4wMDM2MjM5NiAxOTYuMzk4IDAuMDAzNjIzOTZIMTkxLjQ0NUgxNzguOTY1VjYuNTA4NDlIMTk2LjA5OEMxOTcuODQ3IDYuNTA4NDkgMTk5LjI2NCA3LjkxNzE5IDE5OS4yNjQgOS42NTQ5NEMxOTkuMjY0IDExLjM5MjcgMTk3Ljg0NyAxMi44MDE1IDE5Ni4wOTggMTIuODAxNUgxOTIuNjc3SDE4Mi4xNzVWMTkuMTY1OEgxOTIuNjc3SDE5Ni4wOThDMTk3Ljg0NyAxOS4xNjU4IDE5OS4yNjQgMjAuNTc0NiAxOTkuMjY0IDIyLjMxMjNDMTk5LjI2NCAyNC4wNSAxOTcuODQ3IDI1LjQ1ODggMTk2LjA5OCAyNS40NTg4SDE3OC45NjVWMzEuOTYzN0gxNzguOTY1WiIgZmlsbD0iYmxhY2siPjwvcGF0aD48cGF0aCBkPSJNMTMxLjA2NyAwLjAwMzYyMzk2SDEyNi4xMTRIMTEzLjMxM1YzMS45ODkxSDExOS43NTNWMTkuMTY1OUgxMjcuMzQ3SDEzMS4wNjdDMTM2LjM5MiAxOS4xNjU5IDE0MC43MDggMTQuODc2MyAxNDAuNzA4IDkuNTg0NzhDMTQwLjcwOCA0LjI5MzI1IDEzNi4zOTIgMC4wMDM2MjM5NiAxMzEuMDY3IDAuMDAzNjIzOTZaTTEzMC43NjcgMTIuODAxNUgxMTkuNzQ0VjYuNTA4NDlIMTMwLjc2N0MxMzIuNTE2IDYuNTA4NDkgMTMzLjkzMyA3LjkxNzE5IDEzMy45MzMgOS42NTQ5NEMxMzMuOTMzIDExLjM5MjcgMTMyLjUxNiAxMi44MDE1IDEzMC43NjcgMTIuODAxNVoiIGZpbGw9ImJsYWNrIj48L3BhdGg+PHBhdGggZD0iTTEwMi40ODUgMTUuOTgzN0MxMDUuOTIzIDEzLjk5NTIgMTA2LjQwNyAxMS45NjMyIDEwNi40MDcgOS40OTc2NkMxMDYuNDA3IDQuMjkzODkgMTAyLjAwMyAwLjAwMzYyMzk2IDk2LjgwNTQgMC4wMDM2MjM5Nkw5Ni44MDU2IDAuMDAzNzMwNTlDOTYuODA0MSAwLjAwMzczMDU5IDk2LjgwMjkgMC4wMDM2MjM5NiA5Ni44MDE1IDAuMDAzNjIzOTZINzkuMjA3OVYzMS45NjM3SDk3LjEyMzNDMTAyLjMyMSAzMS45NjM3IDEwNi43MjUgMjguNDUyIDEwNi43MjUgMjIuNDY5OEMxMDYuNzI1IDIwLjAwNDIgMTA1LjQ1NSAxNy41ODUxIDEwMi40ODUgMTUuOTgzN1pNODUuNjM5NCA2LjUwODQ5SDk2LjUwMTZDOTguMjUwMiA2LjUwODQ5IDk5LjY2NzYgNy45MTcxOSA5OS42Njc2IDkuNjU0OTRDOTkuNjY3NiAxMS4zOTI3IDk4LjI1MDIgMTIuODAxNSA5Ni41MDE2IDEyLjgwMTVIOTMuMjQxN0g4NS42Mzk0VjYuNTA4NDlaTTk2LjgyMzUgMjUuNDU4OEg4NS42Mzk0VjE5LjE2NThIOTYuODIzNEM5OC41NzIxIDE5LjE2NTggOTkuOTg5NSAyMC41NzQ2IDk5Ljk4OTUgMjIuMzEyM0M5OS45ODk1IDI0LjA1IDk4LjU3MjEgMjUuNDU4OCA5Ni44MjM1IDI1LjQ1ODhaIiBmaWxsPSJibGFjayI+PC9wYXRoPjwvZz48ZGVmcz48Y2xpcFBhdGggaWQ9ImNsaXAwXzM3XzEzODYiPjxyZWN0IHdpZHRoPSIyMDYiIGhlaWdodD0iMzIiIGZpbGw9IndoaXRlIj48L3JlY3Q+PC9jbGlwUGF0aD48L2RlZnM+PC9zdmc+IA==" alt="ЕВРАЗ" width="206" height="32"
+          /></picture>
+          <span class="brand-divider" aria-hidden="true"></span>
+          <div class="brand-caption">Ознакомительный тур<br />Творческое задание</div>
+        </div>
+        <div class="top-actions">
+          <button
+            class="quiet help-button"
+            id="helpBtn"
+            title="Правила игры"
+            aria-label="Правила игры"
+          >
+            <span>Правила</span></button
+          ><button
+            class="iconbtn"
+            id="endBtn"
+            disabled
+            title="Завершить смену"
+            aria-label="Завершить смену"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              aria-hidden="true"
+            >
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+        </div>
+      </header>
+      <main>
+        <section class="metrics" aria-label="Показатели смены">
+          <div class="metric">
+            <span class="metric-label">Время</span
+            ><span class="metric-value" id="timeStat">00:00</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Счёт</span><span class="metric-value" id="scoreStat">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Рельсы</span
+            ><span class="metric-value" id="passedStat">0 <small>/ 10</small></span>
+          </div>
+          <div class="metric metric-level-wrap">
+            <span class="metric-label">Уровень</span
+            ><span class="metric-level" id="levelStat">01 · Обучение</span>
+          </div>
+        </section>
+        <section class="machine" aria-label="Рольганг">
+          <div class="machine-status" id="machineStatus">
+            <span class="dot"></span>Готов к запуску
+          </div>
+          <div class="canvas-wrap">
+            <canvas
+              id="lineCanvas"
+              aria-label="Движущиеся рельсы. Нажмите на рельс или выберите карточку в истории для осмотра."
+            ></canvas>
+            <div class="pause-overlay" id="pauseOverlay">
+              <h2>Пауза</h2>
+              <button class="btn" id="resumeBtn">Продолжить</button>
+            </div>
+          </div>
+          <div class="line-progress" aria-hidden="true"><span id="progressBar"></span></div>
+        </section>
+        <nav class="controls" aria-label="Управление линией">
+          <button class="btn" id="inspectBtn" disabled></button
+          ><button class="btn primary" id="alarmBtn" disabled></button
+          ><button class="btn" id="pauseBtn" disabled></button>
+        </nav>
+        <section class="history-dock" aria-label="История рельсов">
+          <div class="history-heading">
+            <h2>История рельсов<span id="historyLabel"></span></h2>
+            <button class="text-button" id="journalBtn">Журнал</button>
+          </div>
+          <div class="history" id="history"><p class="empty">Рельсы появятся после запуска</p></div>
+        </section>
+      </main>
+    </div>
+    <div class="dialog-backdrop" id="modal" role="presentation">
+      <section
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dialogTitle"
+        id="dialog"
+        tabindex="-1"
+      >
+        <header class="dialog-header">
+          <div>
+            <div class="eyebrow" id="dialogKicker"></div>
+            <h2 id="dialogTitle"></h2>
+          </div>
+          <button class="dialog-close" id="closeModal" aria-label="Закрыть диалог">×</button>
+        </header>
+        <div class="dialog-body" id="dialogBody"></div>
+      </section>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script>
+"use strict";
+(() => {
+  const $ = (id) => document.getElementById(id),
+    $$ = (s) => Array.from(document.querySelectorAll(s));
+  const icons = {
+    inspect: '<circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M10 7v6M7 10h6"/>',
+    alarm: '<path d="M12 3 2 21h20L12 3ZM12 9v5M12 17v.5"/>',
+    pause: '<path d="M8 5v14M16 5v14"/>',
+    play: '<path d="m8 4 12 8-12 8V4Z"/>',
+  };
+  const svg = (name) =>
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
+  const levels = {
+    1: {
+      name: "Обучение",
+      title: "Увидеть закономерность",
+      desc: "Один заметный след повторяется на нескольких рельсах. Не спутайте его со случайной царапиной.",
+      total: 10,
+      interval: 5,
+      contrast: 0.92,
+      noise: 0.14,
+      series: 1,
+    },
+    2: {
+      name: "Практика",
+      title: "Два разных ритма",
+      desc: "Две серии с разной периодичностью. Случайных следов больше — сравнивайте форму и координаты.",
+      total: 20,
+      interval: 3.6,
+      contrast: 0.68,
+      noise: 0.52,
+      series: 2,
+    },
+    3: {
+      name: "Эксперт",
+      title: "Смотреть внимательнее",
+      desc: "Слабые следы, пропуски в сериях и больше помех. Отсутствие следа на одном рельсе не исключает закономерность.",
+      total: 30,
+      interval: 2.5,
+      contrast: 0.42,
+      noise: 0.78,
+      series: 3,
+    },
+    4: {
+      name: "Бесконечный",
+      title: "Держать линию",
+      desc: "Поток не заканчивается. Скорость и сложность растут каждые 20 рельсов. Набирайте очки в непрерывном потоке.",
+      total: Infinity,
+      interval: 3.8,
+      contrast: 0.65,
+      noise: 0.6,
+      series: "∞",
+    },
+  };
+  let chosenLevel = 1,
+    state = null,
+    modalType = "",
+    selectedId = null,
+    inspectId = null,
+    alarmIds = new Set(),
+    alarmSnapshot = [],
+    toastTimer,
+    priorFocus = null,
+    helpReturn = null;
+  const canvas = $("lineCanvas"),
+    ctx = canvas.getContext("2d");
+  let cw = 900,
+    ch = 292,
+    dpr = 1,
+    lastFrame = 0,
+    ambient = 0,
+    renderTimer = 0;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function rng(seed) {
+    return () => {
+      seed |= 0;
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function fmt(n) {
+    return Math.round(n).toLocaleString("ru-RU");
+  }
+  function clock(t) {
+    return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+  }
+  function esc(t) {
+    return String(t).replace(
+      /[&<>"']/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+    );
+  }
+  function beep() {}
+  function toast(text, bad = false) {
+    $("toast").textContent = text;
+    $("toast").className = "toast show" + (bad ? " bad" : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $("toast").classList.remove("show"), 4800);
+  }
+  function log(text, type = "info") {
+    if (!state) return;
+    state.logs.unshift({ time: clock(state.elapsed), text, type });
+    state.logs = state.logs.slice(0, 80);
+    if (modalType === "journal") renderJournal();
+  }
+  function renderJournal() {
+    if (!$("journalEntries")) return;
+    $("journalEntries").innerHTML = state?.logs.length
+      ? state.logs
+          .map(
+            (l) =>
+              `<div class="log-row ${l.type}"><span class="log-time">${l.time}</span><span class="log-text">${esc(l.text)}</span></div>`,
+          )
+          .join("")
+      : '<p class="empty">Событий пока нет</p>';
+  }
+  function showJournal() {
+    openModal(
+      "journal",
+      "",
+      "Журнал событий",
+      '<div id="journalEntries" class="journal-entries" aria-live="polite"></div>',
+    );
+    renderJournal();
+  }
+  function setupButtons() {
+    $("inspectBtn").innerHTML = 'Осмотреть';
+    $("alarmBtn").innerHTML = 'Тревога';
+    updateUI();
+  }
+  function openModal(type, kicker, title, body, wide = false, closable = true) {
+    priorFocus = document.activeElement;
+    modalType = type;
+    $("dialog").dataset.kind = type;
+    $("dialogKicker").textContent = kicker;
+    $("dialogTitle").textContent = title;
+    $("dialogBody").innerHTML = body;
+    $("dialog").classList.toggle("wide", wide);
+    $("closeModal").style.display = closable ? "" : "none";
+    $("modal").classList.add("open");
+    document.body.style.overflow = "hidden";
+    $("dialog").scrollTop = 0;
+    clearTimeout(toastTimer);
+    $("toast").classList.remove("show");
+    requestAnimationFrame(() => {
+      const target = closable ? $("closeModal") : $("dialog");
+      target?.focus({ preventScroll: true });
+      $("dialog").scrollTop = 0;
+    });
+  }
+  function closeModal() {
+    if (["welcome", "result"].includes(modalType)) return;
+    forceClose();
+  }
+  function forceClose() {
+    modalType = "";
+    $("modal").classList.remove("open");
+    document.body.style.overflow = "";
+    if (priorFocus && document.contains(priorFocus)) priorFocus.focus();
+  }
+  function welcome() {
+    chosenLevel = chosenLevel || 1;
+    openModal(
+      "welcome",
+      "СИМУЛЯТОР ОПЕРАТОРА ПОСТА КОНТРОЛЯ",
+      "Ваше внимание — качество рельса",
+      `<div class="welcome-layout"><div><div class="welcome-title"></div><p class="welcome-text">Вы — оператор поста контроля. Находите повторяющиеся дефекты на рельсах и распознавайте повреждение прокатного валка до того, как брак станет массовым.</p><div class="intro-steps"><div class="intro-step"><strong></strong></div><div class="intro-step"><strong></strong></div><div class="intro-step"><strong></strong></div></div></div><div class="welcome-art" aria-label="Схема одинакового следа на трёх рельсах"><div class="art-label">ПРИЗНАК ПОВРЕЖДЕНИЯ ВАЛКА</div><div class="art-track"><div class="art-rail"></div><div class="art-rail"></div><div class="art-rail"></div></div><div class="art-ring"></div><div class="art-foot"></div></div></div><div class="level-picker" role="group" aria-label="Выберите уровень">${Object.entries(
+        levels,
+      )
+        .map(
+          ([k, l]) =>
+            `<button class="level-choice ${+k === chosenLevel ? "active" : ""}" data-level="${k}" aria-pressed="${+k === chosenLevel}"><span class="eyebrow">УРОВЕНЬ ${k === "4" ? "∞" : k}</span><b>${l.name}</b><small>${l.total === Infinity ? "Свободная смена" : l.total + " рельсов"}</small></button>`,
+        )
+        .join(
+          "",
+        )}</div><div class="dialog-actions"><span class="start-hint"></span><button class="btn" id="welcomeHelp">Правила игры</button><button class="btn primary" id="startBtn">Начать смену →</button></div>`,
+      true,
+      false,
+    );
+    $$(".level-choice").forEach(
+      (b) =>
+        (b.onclick = () => {
+          chosenLevel = +b.dataset.level;
+          $$(".level-choice").forEach((c) => {
+            c.classList.toggle("active", c === b);
+            c.setAttribute("aria-pressed", c === b);
+          });
+        }),
+    );
+    $("startBtn").onclick = () => startLevel(chosenLevel);
+    $("welcomeHelp").onclick = () => showHelp("welcome");
+  }
+  function showHelp(from = null) {
+    helpReturn = from;
+    const wasRunning = state?.running && !state.paused;
+    if (wasRunning) {
+      if (state.pauses < 3) {
+        state.pauses++;
+        state.paused = true;
+        log("Линия остановлена для чтения правил. Пауза " + state.pauses + " из 3.");
+        updateUI();
+      } else {
+        toast("Лимит пауз исчерпан. Правила открыты, но линия продолжает движение.", true);
+      }
+    }
+    openModal(
+      "help",
+      "ПАМЯТКА ОПЕРАТОРА",
+      "Как читать поверхность",
+      `<div class="help-grid concise-help">
+<div class="help-block"><h3>01. Найдите след</h3><p>Нажмите на рельс или карточку. В осмотре клик по дефекту ставит или снимает вашу заметку.</p></div>
+<div class="help-block"><h3>02. Сопоставьте рельсы</h3><p>Если один след повторяется в одном месте на 2–5 рельсах, то это признак повреждения валка. В сложных сериях бывают пропуски.</p></div>
+<div class="help-block"><h3>03. Проверьте гипотезу</h3><p>Нажмите 'Тревога', затем выберите от 2 до 5 рельс и укажите причину. Каждая серия засчитывается один раз.</p><p class="help-detail">Вся серия +100, часть +60, бонус за скорость до +50.<br>Ложная тревога −50, пропуск серии −150.</p></div>
+<div class="help-block"><h3>04. Не спешите с выводом</h3><p>Похожие следы вне серии → «Другая причина»: +30. За чистые рельсы и разные пятна бонуса нет.</p><p class="help-detail">Пробел — пауза, до 3 раз. I — осмотр, A — тревога, Esc — закрыть.<br>Осмотр и тревога <b>не останавливают линию</b>.</p></div>
+</div>`,
+      true,
+    );
+  }
+
+  // Все дефекты и их геометрия фиксируются при генерации. Осмотр не меняет поверхность.
+  function makeShape(seed, x, y, type, contrast, group = null, kind = "noise") {
+    const rand = rng(seed);
+    return {
+      seed,
+      x,
+      y,
+      type,
+      contrast,
+      group,
+      kind,
+      angle: (rand() - 0.5) * 0.9,
+      size: 0.82 + rand() * 0.36,
+    };
+  }
+  function generateSchedule(l, total = 30, offset = 0) {
+    const r = state.rand,
+      episodes = [];
+    let defs = [];
+    if (l === 1) defs = [[3, 4, 5]];
+    if (l === 2)
+      defs = [
+        [3, 4, 5, 6],
+        [12, 14, 16],
+      ];
+    if (l === 3)
+      defs = [
+        [3, 4, 6, 7],
+        [12, 14, 16, 18],
+        [23, 24, 26, 27, 28],
+      ];
+    if (l === 4) {
+      for (let i = 0; i < 3; i++) {
+        const base = offset + 3 + i * 10;
+        const gap = r() > 0.45 ? 2 : 1;
+        const n = r() > 0.6 ? 4 : 3;
+        defs.push(Array.from({ length: n }, (_, j) => base + j * gap));
+      }
+    }
+    for (const members of defs) {
+      const id = "p" + ++state.epCounter,
+        type = l === 1 ? "scratch" : ["scratch", "dent", "stain"][Math.floor(r() * 3)];
+      const shapeSeed = Math.floor(r() * 1e8);
+      const x = 0.24 + r() * 0.52,
+        y = 0.28 + r() * 0.44;
+      const ep = {
+        id,
+        members,
+        first: members[0],
+        last: members.at(-1),
+        resolved: false,
+        missed: false,
+        type,
+        shapeSeed,
+        x,
+        y,
+      };
+      state.episodes.push(ep);
+      episodes.push(ep);
+    }
+    // Учебная несистематическая пара: одинаковая форма, но далеко друг от друга.
+    const otherPositions =
+      l === 1 ? [7, 9] : l === 2 ? [9, 19] : l === 3 ? [10, 21] : [offset + 1, offset + 20];
+    const otherId = "o" + ++state.otherCounter;
+    state.otherGroups.push({ id: otherId, members: otherPositions, resolved: false });
+    let prevNoise = [];
+    for (let i = offset + 1; i <= offset + total; i++) {
+      let defects = [];
+      for (const ep of episodes) {
+        if (ep.members.includes(i)) {
+          const con = l === 4 ? Math.max(0.25, 0.7 - i * 0.002) : levels[l].contrast;
+          defects.push(
+            makeShape(
+              ep.shapeSeed,
+              ep.x + (r() - 0.5) * 0.016,
+              ep.y + (r() - 0.5) * 0.018,
+              ep.type,
+              con,
+              ep.id,
+              "system",
+            ),
+          );
+        }
+      }
+      let noisePositions = [];
+      if (otherPositions.includes(i))
+        defects.push(makeShape(9184, 0.29, 0.62, "dent", l === 1 ? 0.8 : 0.58, otherId, "other"));
+      const probability = l === 4 ? Math.min(0.9, 0.55 + i * 0.003) : levels[l].noise;
+      if (r() < probability && defects.length < 2) {
+        let x,
+          y,
+          attempt = 0;
+        do {
+          x = 0.12 + r() * 0.76;
+          y = 0.23 + r() * 0.53;
+          attempt++;
+        } while (
+          attempt < 25 &&
+          prevNoise.some((p) => Math.abs(p.x - x) < 0.17 && Math.abs(p.y - y) < 0.24)
+        );
+        const type = ["scratch", "stain", "dent"][Math.floor(r() * 3)];
+        defects.push(makeShape(Math.floor(r() * 1e8), x, y, type, 0.35 + r() * 0.5));
+        noisePositions.push({ x, y });
+      }
+      prevNoise = noisePositions;
+      state.schedule.set(i, {
+        id: i,
+        seed: Math.floor(r() * 1e9),
+        defects,
+        marked: [],
+        inspected: false,
+        checked: false,
+        enteredAt: 0,
+        passed: false,
+      });
+    }
+  }
+  function startLevel(l) {
+    forceClose();
+    const seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
+    state = {
+      level: l,
+      running: true,
+      paused: false,
+      pauses: 0,
+      elapsed: 0,
+      score: 0,
+      spawned: 0,
+      passed: 0,
+      nextSpawn: 0,
+      total: levels[l].total,
+      rails: [],
+      schedule: new Map(),
+      episodes: [],
+      otherGroups: [],
+      epCounter: 0,
+      otherCounter: 0,
+      rand: rng(seed),
+      logs: [],
+      success: 0,
+      falseAlarms: 0,
+      misses: 0,
+      otherSuccess: 0,
+      losses: 0,
+      reactions: [],
+      reactionSeconds: [],
+      saved: false,
+      seed,
+    };
+    selectedId = null;
+    inspectId = null;
+    generateSchedule(l, l === 4 ? 30 : state.total);
+    $("history").innerHTML = "";
+    updateUI();
+    log("Смена началась. Уровень " + l + " — " + levels[l].name + ".");
+    spawn();
+    if (l === 1) log("Обучение: ищите одинаковую форму в одном месте на соседних рельсах.");
+    beep();
+    lastFrame = performance.now();
+  }
+  function interval() {
+    if (!state) return 5;
+    return state.level === 4
+      ? Math.max(2, 3.8 - Math.floor(state.spawned / 20) * 0.35)
+      : levels[state.level].interval;
+  }
+  function transitTime() {
+    return Math.max(7.8, interval() * 2.2);
+  }
+  function spawn() {
+    if (!state || state.spawned >= state.total) return;
+    if (!state.schedule.has(state.spawned + 1)) generateSchedule(4, 30, state.spawned);
+    const rail = state.schedule.get(++state.spawned);
+    rail.enteredAt = state.elapsed;
+    rail.transit = transitTime();
+    state.rails.push(rail);
+    state.nextSpawn = state.elapsed + interval();
+    selectedId = rail.id;
+    if (state.level === 1 && rail.id === 4) {
+      toast("Сравните рельсы №003 и №004: совпадают ли форма и место следа?");
+      log("Подсказка: сравните №003 и №004 в истории.");
+    }
+    if (state.level === 4 && state.spawned % 20 === 1 && state.spawned > 1)
+      log("Темп вырос: новый рельс каждые " + interval().toFixed(1) + " с.");
+    renderHistory();
+    updateUI();
+  }
+  function updateUI() {
+    const l = levels[state?.level || 1],
+      running = state?.running;
+    $("timeStat").textContent = clock(state?.elapsed || 0);
+    $("scoreStat").textContent = fmt(state?.score || 0);
+    $("passedStat").innerHTML =
+      (state?.passed || 0) + " <small>/ " + (l.total === Infinity ? "∞" : l.total) + "</small>";
+    $("levelStat").textContent = String(state?.level || 1).padStart(2, "0") + " · " + l.name;
+    $("progressBar").style.width = state
+      ? (l.total === Infinity ? ((state.passed % 20) / 20) * 100 : (state.passed / l.total) * 100) +
+        "%"
+      : "0%";
+    $("inspectBtn").disabled = !running || !state?.rails.length;
+    $("alarmBtn").disabled = !running || state?.rails.length < 2;
+    $("endBtn").disabled = !running;
+    $("pauseBtn").disabled = !running || (!state.paused && state.pauses >= 3);
+    $("pauseBtn").innerHTML =
+      (state?.paused ? "Продолжить" : "Пауза") +
+      '<span class="pause-count">' +
+      (3 - (state?.pauses || 0)) +
+      "</span>";
+    $("pauseBtn").setAttribute(
+      "aria-label",
+      (state?.paused ? "Продолжить" : "Пауза") +
+        ". Осталось остановок: " +
+        (3 - (state?.pauses || 0)),
+    );
+    $("pauseOverlay").classList.toggle("show", !!running && state.paused);
+    $("machineStatus").innerHTML =
+      '<span class="dot"></span>' +
+      (running
+        ? state.paused
+          ? "Пауза"
+          : "В работе"
+        : state
+          ? "Смена завершена"
+          : "Готов к запуску");
+    if (modalType === "inspect" && running) {
+      if ($("nextRail")) $("nextRail").disabled = inspectId >= state.spawned;
+      if ($("inspectAlarm")) $("inspectAlarm").disabled = state.spawned < 2;
+      if ($("inspectLive"))
+        $("inspectLive").textContent = state.paused ? "Линия на паузе" : "● Линия движется";
+    }
+  }
+  function pause() {
+    if (!state?.running) return;
+    if (state.paused) {
+      state.paused = false;
+      log("Движение возобновлено.");
+    } else {
+      if (state.pauses >= 3) return;
+      state.paused = true;
+      state.pauses++;
+      log("Пауза " + state.pauses + " из 3. Сравните рельсы в истории.");
+    }
+    updateUI();
+  }
+  function renderHistory() {
+    if (!state) return;
+    const el = $("history"),
+      atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 40;
+    el.innerHTML = state.rails
+      .slice(-60)
+      .map((r) => cardHTML(r, false))
+      .join("");
+    el.querySelectorAll("[data-rail]").forEach((b) => (b.onclick = () => inspect(+b.dataset.rail)));
+    el.querySelectorAll("canvas").forEach((c) => drawThumb(c, state.schedule.get(+c.dataset.id)));
+    $("historyLabel").textContent = state.rails.length ? " · " + state.rails.length : "";
+    if (atEnd) el.scrollLeft = el.scrollWidth;
+  }
+  function cardHTML(r, alarm) {
+    return `<button class="rail-card ${alarm ? (alarmIds.has(r.id) ? "selected" : "") : selectedId === r.id ? "selected" : ""} ${r.checked ? "checked" : ""}" ${alarm ? 'aria-pressed="' + alarmIds.has(r.id) + '"' : ""} data-rail="${r.id}" aria-label="Рельс ${String(r.id).padStart(3, "0")}${r.marked.length ? ", с отметкой" : ""}${r.checked ? ", проверен" : ""}"><span class="card-number"><span>№${String(r.id).padStart(3, "0")}</span><span>${r.checked ? "✓" : r.marked.length ? "●" : ""}</span></span><canvas width="230" height="60" data-id="${r.id}" aria-hidden="true"></canvas></button>`;
+  }
+  function drawThumb(c, r) {
+    if (!r) return;
+    const cctx = c.getContext("2d");
+    cctx.clearRect(0, 0, c.width, c.height);
+    drawRail(cctx, r, 5, 15, c.width - 10, 27, false);
+    for (const idx of r.marked) {
+      const d = r.defects[idx];
+      cctx.strokeStyle = "#e77a45";
+      cctx.lineWidth = 2;
+      cctx.beginPath();
+      cctx.arc(5 + d.x * (c.width - 10), 15 + d.y * 27, 9, 0, Math.PI * 2);
+      cctx.stroke();
+    }
+  }
+  function drawDefect(c, d, x, y, w, h) {
+    const px = x + d.x * w,
+      py = y + d.y * h,
+      k = d.size;
+    const r = rng(d.seed);
+    c.save();
+    c.translate(px, py);
+    c.rotate(d.angle);
+    c.globalAlpha = d.contrast;
+    if (d.type === "scratch") {
+      c.lineCap = "round";
+      const len = w * 0.105 * k;
+      c.strokeStyle = "#354536";
+      c.lineWidth = Math.max(1.25, h * 0.052);
+      c.beginPath();
+      c.moveTo(-len * 0.5, h * 0.09);
+      c.bezierCurveTo(-len * 0.12, -h * 0.05, len * 0.2, h * 0.035, len * 0.5, -h * 0.11);
+      c.stroke();
+      c.strokeStyle = "#e2e9d5";
+      c.lineWidth = Math.max(0.55, h * 0.012);
+      c.beginPath();
+      c.moveTo(-len * 0.5, h * 0.12);
+      c.lineTo(len * 0.48, -h * 0.08);
+      c.stroke();
+      for (let i = 0; i < 3; i++) {
+        c.strokeStyle = "#5d6b57";
+        c.lineWidth = Math.max(0.5, h * 0.015);
+        c.beginPath();
+        const xx = (r() - 0.5) * len;
+        c.moveTo(xx, 0);
+        c.lineTo(xx + len * 0.13, -h * 0.12);
+        c.stroke();
+      }
+    } else if (d.type === "dent") {
+      const rx = w * 0.027 * k,
+        ry = h * 0.13;
+      const g = c.createRadialGradient(-rx * 0.15, -ry * 0.2, 0, 0, 0, rx * 1.3);
+      g.addColorStop(0, "#384b37");
+      g.addColorStop(0.52, "#586951");
+      g.addColorStop(1, "#a6b19600");
+      c.fillStyle = g;
+      c.save();
+      c.scale(1, Math.max(0.16, ry / rx));
+      c.beginPath();
+      c.arc(0, 0, rx * 1.3, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+      c.strokeStyle = "#d8e2c4";
+      c.lineWidth = Math.max(0.6, h * 0.012);
+      c.beginPath();
+      c.ellipse(0, ry * 0.3, rx * 0.75, ry * 0.7, 0, 0, Math.PI * 0.9);
+      c.stroke();
+    } else {
+      const rx = w * 0.032 * k,
+        ry = h * 0.15;
+      for (let i = 0; i < 9; i++) {
+        c.fillStyle = i % 2 ? "#394331" : "#49563a";
+        c.globalAlpha = d.contrast * (0.12 + r() * 0.2);
+        c.beginPath();
+        c.ellipse(
+          (r() - 0.5) * rx,
+          (r() - 0.5) * ry,
+          rx * (0.4 + r() * 0.6),
+          ry * (0.35 + r() * 0.55),
+          r() * 0.5,
+          0,
+          Math.PI * 2,
+        );
+        c.fill();
+      }
+    }
+    c.restore();
+  }
+  function drawRail(c, r, x, y, w, h, detail = false) {
+    c.save();
+    c.shadowColor = "#08110be0";
+    c.shadowBlur = detail ? 15 : 8;
+    c.shadowOffsetY = detail ? 14 : 8;
+    let g = c.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, "#8a9683");
+    g.addColorStop(0.045, "#d6ddca");
+    g.addColorStop(0.15, "#aebba2");
+    g.addColorStop(0.44, "#bbc5ad");
+    g.addColorStop(0.85, "#a1ae94");
+    g.addColorStop(0.92, "#d2dac2");
+    g.addColorStop(1, "#687961");
+    c.fillStyle = g;
+    c.fillRect(x, y, w, h);
+    c.shadowColor = "transparent";
+    c.fillStyle = "#55654d";
+    c.fillRect(x, y + h, w, Math.max(3, h * 0.14));
+    c.fillStyle = "#78866d";
+    c.beginPath();
+    c.moveTo(x + w, y);
+    c.lineTo(x + w + Math.min(7, h * 0.16), y + 4);
+    c.lineTo(x + w + Math.min(7, h * 0.16), y + h + Math.max(3, h * 0.14));
+    c.lineTo(x + w, y + h);
+    c.fill();
+    c.save();
+    c.beginPath();
+    c.rect(x, y, w, h);
+    c.clip();
+    const rand = rng(r.seed);
+    const n = detail ? 240 : 65;
+    for (let i = 0; i < n; i++) {
+      const yy = y + rand() * h,
+        xx = x + rand() * w;
+      c.strokeStyle = rand() > 0.6 ? "rgba(245,250,226,.11)" : "rgba(47,70,44,.09)";
+      c.lineWidth = rand() > 0.7 ? 1 : 0.5;
+      c.beginPath();
+      c.moveTo(xx, yy);
+      c.lineTo(xx + (rand() * 0.3 + 0.05) * w, yy + (rand() - 0.5) * 0.8);
+      c.stroke();
+    }
+    for (const d of r.defects) drawDefect(c, d, x, y, w, h);
+    c.restore();
+    c.strokeStyle = "#e0e8d380";
+    c.lineWidth = 0.7;
+    c.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    c.restore();
+  }
+  function resize() {
+    const b = canvas.getBoundingClientRect();
+    cw = b.width;
+    ch = b.height;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(cw * dpr);
+    canvas.height = Math.round(ch * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (modalType === "inspect") drawInspect();
+  }
+  const resizeObs = new ResizeObserver(resize);
+  resizeObs.observe(canvas);
+  function lineGeometry() {
+    const ratio = interval() / transitTime();
+    const rw = Math.min(520, cw * 0.52, ((cw * ratio) / (1 - ratio)) * 0.9);
+    const rh = Math.max(44, Math.min(108, rw * 0.21));
+    return { rw, rh, y: (ch - rh) / 2 - 3 };
+  }
+  function drawLine(dt) {
+    ctx.clearRect(0, 0, cw, ch);
+    const bg = ctx.createLinearGradient(0, 0, 0, ch);
+    bg.addColorStop(0, "#243028");
+    bg.addColorStop(0.5, "#1d2921");
+    bg.addColorStop(1, "#18221c");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.strokeStyle = "#a2b2910b";
+    ctx.lineWidth = 1;
+    for (let x = 28; x < cw; x += 48) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, ch);
+      ctx.stroke();
+    }
+    for (let y = 28; y < ch; y += 48) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(cw, y);
+      ctx.stroke();
+    }
+    const { rw, rh: railH, y: railY } = lineGeometry();
+    const bedTop = railY - 32,
+      bedBottom = railY + railH + 45;
+    ctx.fillStyle = "#0f1b13";
+    ctx.fillRect(0, bedTop, cw, bedBottom - bedTop);
+    // Deep support beams and rotating roller highlights.
+    for (const yy of [bedTop - 12, bedBottom + 10]) {
+      ctx.fillStyle = "#15221a";
+      ctx.fillRect(0, yy - 5, cw, 10);
+      ctx.fillStyle = "#3b4d37";
+      ctx.fillRect(0, yy - 5, cw, 1);
+    }
+    for (let x = 12; x < cw + 30; x += 44) {
+      const g = ctx.createLinearGradient(x - 12, 0, x + 12, 0);
+      g.addColorStop(0, "#213128");
+      g.addColorStop(0.3, "#617659");
+      g.addColorStop(0.52, "#809274");
+      g.addColorStop(0.72, "#51654b");
+      g.addColorStop(1, "#24372a");
+      ctx.fillStyle = g;
+      ctx.fillRect(x - 12, bedTop + 9, 24, bedBottom - bedTop - 18);
+      ctx.fillStyle = "#14231a";
+      ctx.fillRect(x - 9, bedTop + 7, 18, 5);
+      ctx.fillRect(x - 9, bedBottom - 11, 18, 5);
+      ctx.fillStyle = "#c5d3b446";
+      ctx.fillRect(x - 9 + ((ambient * 13) % 17), bedTop + 15, 1, bedBottom - bedTop - 31);
+    }
+    for (const yy of [bedTop, bedBottom]) {
+      ctx.fillStyle = "#45583d";
+      ctx.fillRect(0, yy - 3, cw, 6);
+      ctx.fillStyle = "#93a17b";
+      ctx.fillRect(0, yy - 3, cw, 1);
+      for (let x = 16; x < cw; x += 88) {
+        ctx.fillStyle = "#142217";
+        ctx.beginPath();
+        ctx.arc(x, yy, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    let rails = state
+      ? state.rails.filter((r) => !r.passed)
+      : [
+          {
+            id: 1,
+            seed: 844,
+            defects: [makeShape(299, 0.58, 0.48, "scratch", 0.8)],
+            position: 0.42,
+          },
+          { id: 2, seed: 832, defects: [], position: 0.89 },
+        ];
+    for (const rail of rails) {
+      const p = state
+        ? clamp((state.elapsed - rail.enteredAt) / rail.transit, 0, 1)
+        : rail.position;
+      const x = -rw + (cw + rw + 16) * p;
+      if (x > cw || x + rw < 0) continue;
+      drawRail(ctx, rail, x, railY, rw, railH, true);
+      if (rail.id === selectedId && state) {
+        ctx.strokeStyle = "#f2a96f";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - 4, railY - 4, rw + 8, railH + Math.max(3, railH * 0.14) + 8);
+      }
+      ctx.font = "13px Consolas,monospace";
+      ctx.fillStyle = rail.checked ? "#b4dc99" : "#cfdbc4";
+      ctx.fillText(
+        "№ " + String(rail.id).padStart(3, "0") + (rail.checked ? "  ✓" : ""),
+        Math.max(12, x + 8),
+        bedTop - 23,
+      );
+    }
+    // Quiet optical accents replace the previous labels.
+    ctx.strokeStyle = "#d4ad7045";
+    ctx.lineWidth = 1;
+    for (const x of [cw * 0.5 - 22, cw * 0.5 + 22]) {
+      ctx.beginPath();
+      ctx.moveTo(x, bedTop - 20);
+      ctx.lineTo(x, bedTop - 10);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, bedBottom + 11);
+      ctx.lineTo(x, bedBottom + 21);
+      ctx.stroke();
+    }
+  }
+  function advance(dt) {
+    if (state?.running && !state.paused) {
+      state.elapsed += dt;
+      ambient += dt;
+      if (state.elapsed >= state.nextSpawn && state.spawned < state.total) spawn();
+      for (const r of state.rails) {
+        if (!r.passed && state.elapsed - r.enteredAt >= r.transit) {
+          r.passed = true;
+          state.passed++;
+          checkMisses(false);
+        }
+      }
+      if (state.spawned === state.total && state.passed === state.total) finish(false);
+    } else if (!state) ambient += dt * 0.4;
+    renderTimer += dt;
+    if (renderTimer > 0.2) {
+      updateUI();
+      renderTimer = 0;
+    }
+  }
+  function tick(ts) {
+    const dt = Math.min((ts - lastFrame) / 1000 || 0, 0.12);
+    lastFrame = ts;
+    advance(dt);
+    drawLine(dt);
+    requestAnimationFrame(tick);
+  }
+  function checkMisses(final) {
+    if (!state) return;
+    for (const ep of state.episodes) {
+      if (!ep.resolved && !ep.missed && (final || state.passed >= ep.last + 3)) {
+        ep.missed = true;
+        state.misses++;
+        state.score -= 150;
+        state.losses += 12;
+        log(
+          "Пропуск серии №" +
+            String(ep.first).padStart(3, "0") +
+            "–" +
+            String(ep.last).padStart(3, "0") +
+            ". −150. Потеря: ещё 12 рельсов прошли без контроля.",
+          "bad",
+        );
+        toast("Пропущен повторяющийся дефект. −150 очков · 12 рельсов условных потерь.", true);
+        beep("bad");
+      }
+    }
+  }
+  canvas.addEventListener("click", (e) => {
+    if (!state?.running) return;
+    const b = canvas.getBoundingClientRect(),
+      x = e.clientX - b.left,
+      y = e.clientY - b.top,
+      rw = lineGeometry().rw,
+      yy = lineGeometry().y;
+    for (const r of state.rails.slice().reverse()) {
+      if (r.passed) continue;
+      const p = (state.elapsed - r.enteredAt) / r.transit,
+        rx = -rw + (cw + rw + 16) * p;
+      if (x >= rx && x <= rx + rw && y >= yy - 10 && y <= yy + lineGeometry().rh + 20) {
+        inspect(r.id);
+        return;
+      }
+    }
+  });
+  function inspect(id) {
+    if (!state?.running) return;
+    const r = state.schedule.get(id || selectedId || state.spawned);
+    if (!r || r.id > state.spawned) return;
+    selectedId = inspectId = r.id;
+    r.inspected = true;
+    openModal(
+      "inspect",
+      "ОСМОТР ПОВЕРХНОСТИ",
+      "Рельс №" + String(r.id).padStart(3, "0"),
+      `<div class="inspect-bar"><span>Поверхность рельса</span><span id="inspectLive">${state.paused ? "Линия на паузе" : "● Линия движется"}</span></div><div class="inspect-area"><canvas id="inspectCanvas" aria-label="Поверхность рельса. Нажмите на видимый дефект, чтобы поставить отметку."></canvas></div><div class="inspect-legend"><span><i class="legend-ring"></i>Ваша отметка</span><span id="markCount">Отметок: ${r.marked.length}</span><span>Клик по следу — отметить / снять</span></div><div  id="inspectNotice"></div><div class="dialog-actions"><div class="inspect-nav"><button class="btn" id="prevRail" aria-label="Предыдущий рельс">←</button><button class="btn" id="nextRail" aria-label="Следующий рельс">→</button></div><button class="btn" id="inspectPause">${state.paused ? "Продолжить линию" : "Пауза (" + (3 - state.pauses) + ")"}</button><button class="btn primary" id="inspectAlarm">К тревоге →</button></div>`,
+      true,
+    );
+    $("prevRail").disabled = r.id <= 1;
+    $("nextRail").disabled = r.id >= state.spawned;
+    $("prevRail").onclick = () => inspect(r.id - 1);
+    $("nextRail").onclick = () => inspect(r.id + 1);
+    $("inspectPause").disabled = !state.paused && state.pauses >= 3;
+    $("inspectPause").onclick = () => {
+      pause();
+      $("inspectLive").textContent = state.paused ? "Линия на паузе" : "● Линия движется";
+      $("inspectPause").textContent = state.paused
+        ? "Продолжить линию"
+        : "Пауза (" + (3 - state.pauses) + ")";
+      $("inspectPause").disabled = !state.paused && state.pauses >= 3;
+    };
+    $("inspectAlarm").disabled = state.spawned < 2;
+    $("inspectAlarm").onclick = showAlarm;
+    requestAnimationFrame(drawInspect);
+    renderHistory();
+  }
+  function drawInspect() {
+    const c = $("inspectCanvas");
+    if (!c || !state) return;
+    const r = state.schedule.get(inspectId),
+      b = c.getBoundingClientRect(),
+      dd = Math.min(devicePixelRatio || 1, 2);
+    if (b.width === 0) return;
+    c.width = b.width * dd;
+    c.height = b.height * dd;
+    const cc = c.getContext("2d");
+    cc.setTransform(dd, 0, 0, dd, 0, 0);
+    const w = b.width,
+      h = b.height,
+      x = 24,
+      y = h * 0.28,
+      rw = w - 48,
+      rh = h * 0.38;
+    cc.fillStyle = "#202924";
+    cc.fillRect(0, 0, w, h);
+    cc.strokeStyle = "#9db48c15";
+    for (let xx = 24; xx < w; xx += 32) {
+      cc.beginPath();
+      cc.moveTo(xx, 0);
+      cc.lineTo(xx, h);
+      cc.stroke();
+    }
+    cc.fillStyle = "#aebda2";
+    cc.font = "10px Consolas,monospace";
+
+    drawRail(cc, r, x, y, rw, rh, true);
+    cc.strokeStyle = "#9db48c80";
+    cc.lineWidth = 1;
+    cc.beginPath();
+    cc.moveTo(x, y + rh + 35);
+    cc.lineTo(x + rw, y + rh + 35);
+    cc.stroke();
+    for (let i = 0; i <= 10; i++) {
+      let xx = x + (rw * i) / 10;
+      cc.beginPath();
+      cc.moveTo(xx, y + rh + 30);
+      cc.lineTo(xx, y + rh + 40);
+      cc.stroke();
+      if (i % 2 === 0) {
+        cc.fillStyle = "#aabca0";
+        cc.font = "9px Consolas,monospace";
+        cc.fillText(i * 10 + "%", Math.min(xx, w - 42), y + rh + 54);
+      }
+    }
+    for (const idx of r.marked) {
+      const d = r.defects[idx];
+      cc.strokeStyle = "#f29352";
+      cc.lineWidth = 2;
+      cc.beginPath();
+      cc.arc(x + d.x * rw, y + d.y * rh, Math.max(13, rh * 0.2), 0, Math.PI * 2);
+      cc.stroke();
+      cc.fillStyle = "#f4ac70";
+      cc.font = "10px Consolas,monospace";
+      cc.fillText("МЕТКА", x + d.x * rw - 15, y + d.y * rh - rh * 0.22 - 6);
+    }
+    c.onclick = (e) => {
+      const bb = c.getBoundingClientRect(),
+        mx = e.clientX - bb.left,
+        my = e.clientY - bb.top;
+      let best = -1,
+        dist = Infinity;
+      r.defects.forEach((d, i) => {
+        const dx = (mx - x - d.x * rw) / Math.max(16, rw * 0.055),
+          dy = (my - y - d.y * rh) / Math.max(14, rh * 0.22),
+          z = dx * dx + dy * dy;
+        if (z < 1.4 && z < dist) {
+          best = i;
+          dist = z;
+        }
+      });
+      if (best < 0) {
+        $("inspectNotice").textContent =
+          "";
+        return;
+      }
+      const pos = r.marked.indexOf(best);
+      if (pos >= 0) r.marked.splice(pos, 1);
+      else r.marked.push(best);
+      $("markCount").textContent = "Отметок: " + r.marked.length;
+      $("inspectNotice").textContent =
+        pos >= 0
+          ? ""
+          : "";
+      drawInspect();
+      renderHistory();
+    };
+  }
+  function showAlarm() {
+    if (!state?.running || state.spawned < 2) return;
+    alarmIds = new Set();
+    alarmSnapshot = state.rails.slice(-30).filter((r) => !r.checked);
+    if (alarmSnapshot.length < 2) {
+      toast("Нужно минимум два ещё не проверенных рельса.");
+      return;
+    }
+    openModal(
+      "alarm",
+      "ПРОВЕРКА ГИПОТЕЗЫ",
+      "Что вызывает подозрение?",
+      `<div class="alarm-toolbar"><span>Выберите <b>от 2 до 5</b> рельсов</span><span id="selectionCount">Выбрано: 0 / 5</span></div><div class="alarm-grid" id="alarmGrid"></div><div class="reasons"><label class="reason"><input type="radio" name="reason" value="roller" checked><span><b>Повреждение валка</b><small>Одинаковый след в одной серии</small></span></label><label class="reason"><input type="radio" name="reason" value="other"><span><b>Другая причина</b><small>Похожий след, но вне последовательной серии</small></span></label></div><div class="feedback" id="alarmFeedback" role="status"></div><div class="dialog-actions"><span class="start-hint">${state.paused ? "Линия приостановлена." : "Линия продолжает движение."} Список зафиксирован на момент открытия.</span><button class="btn primary" id="submitAlarm" disabled>Подтвердить тревогу</button></div>`,
+      true,
+    );
+    renderAlarmCards();
+    $("submitAlarm").onclick = submitAlarm;
+  }
+  function renderAlarmCards() {
+    const el = $("alarmGrid"),
+      scroll = el.scrollTop;
+    el.innerHTML = alarmSnapshot.map((r) => cardHTML(r, true)).join("");
+    el.querySelectorAll("canvas").forEach((c) => drawThumb(c, state.schedule.get(+c.dataset.id)));
+    el.querySelectorAll("button").forEach(
+      (b) =>
+        (b.onclick = () => {
+          const id = +b.dataset.rail;
+          if (alarmIds.has(id)) alarmIds.delete(id);
+          else if (alarmIds.size < 5) alarmIds.add(id);
+          else {
+            toast("Можно выбрать не больше пяти рельсов.");
+            return;
+          }
+          renderAlarmCards();
+        }),
+    );
+    el.scrollTop = scroll;
+    $("selectionCount").textContent = "Выбрано: " + alarmIds.size + " / 5";
+    $("submitAlarm").disabled = alarmIds.size < 2 || alarmIds.size > 5;
+  }
+  function submitAlarm() {
+    if (!state?.running || alarmIds.size < 2 || alarmIds.size > 5) return;
+    const ids = [...alarmIds].sort((a, b) => a - b),
+      reason = document.querySelector('input[name="reason"]:checked')?.value;
+    const episode = state.episodes.find(
+      (ep) => !ep.resolved && !ep.missed && ids.every((id) => ep.members.includes(id)),
+    );
+    if (reason === "roller" && episode) {
+      const full = episode.members.every((id) => ids.includes(id)),
+        reaction = Math.max(0, state.spawned - episode.first),
+        bonus = clamp(50 - Math.max(0, reaction - 1) * 10, 0, 50),
+        points = (full ? 100 : 60) + bonus;
+      episode.resolved = true;
+      state.success++;
+      state.score += points;
+      state.reactions.push(reaction);
+      state.reactionSeconds.push(state.elapsed - state.schedule.get(episode.first).enteredAt);
+      for (const id of episode.members) {
+        const r = state.schedule.get(id);
+        if (r) r.checked = true;
+      }
+      log(
+        "Валок: серия " +
+          ids.map((i) => "№" + String(i).padStart(3, "0")).join(", ") +
+          ". +" +
+          points +
+          " (" +
+          (full ? "полная серия +100" : "часть серии +60") +
+          ", скорость +" +
+          bonus +
+          ").",
+        "good",
+      );
+      forceClose();
+      toast(
+        "Повреждение валка обнаружено! +" +
+          points +
+          " очков." +
+          (full ? " Вся серия найдена." : " Найдена часть серии."),
+      );
+      beep();
+      renderHistory();
+      updateUI();
+      return;
+    }
+    if (reason === "other") {
+      const group = state.otherGroups.find(
+        (g) => !g.resolved && ids.every((id) => g.members.includes(id)) && ids.length >= 2,
+      );
+      if (group) {
+        group.resolved = true;
+        state.otherSuccess++;
+        state.score += 30;
+        ids.forEach((id) => (state.schedule.get(id).checked = true));
+        log("Другая причина: похожие несерийные следы. +30 очков.", "good");
+        forceClose();
+        toast("Верно: похожие следы не образуют последовательную серию. +30.");
+        beep();
+        renderHistory();
+        updateUI();
+        return;
+      }
+    }
+    state.falseAlarms++;
+    state.score -= 50;
+    log("Ложная тревога по рельсам " + ids.join(", ") + ". −50 очков.", "bad");
+    forceClose();
+    toast("Ложная тревога: выбранные рельсы не подтверждают эту причину. −50 очков.", true);
+    beep("bad");
+    updateUI();
+  }
+  function confirmEnd() {
+    if (!state?.running) return;
+    openModal('end', '', 'Завершение смены',
+      '<div class="end-actions"><button class="btn" id="cancelEnd">Вернуться к линии</button><button class="btn primary" id="confirmEnd">Завершить смену</button></div>', false, false);
+    $('cancelEnd').onclick = forceClose;
+    $('confirmEnd').onclick = () => finish(true);
+  }
+  function finish(early) {
+    if (!state?.running) return;
+    state.running = false;
+    state.paused = false;
+    const started = state.episodes.filter((e) => e.first <= state.spawned);
+    for (const ep of started)
+      if (!ep.resolved && !ep.missed) {
+        ep.missed = true;
+        state.misses++;
+        state.score -= 150;
+        state.losses += 12;
+        log(
+          "Пропуск серии с №" + ep.first + ". −150. Потеря: ещё 12 рельсов прошли без контроля.",
+          "bad",
+        );
+      }
+    log(early ? "Смена завершена оператором." : "Все рельсы уровня прошли пост контроля.");
+    state.early = early;
+    updateUI();
+    showResults();
+  }
+  function showResults() {
+    const s = state;
+    if (!s) return;
+    const avg = s.reactions.length
+      ? (s.reactions.reduce((a, b) => a + b, 0) / s.reactions.length).toFixed(1).replace('.', ',')
+      : '—';
+    openModal('result', '', 'Отчёт по смене', `
+      <div class="compact-score"><div class="compact-score-label">Итоговый счёт</div><div class="result-score" id="finalScore">${fmt(s.score)}</div></div>
+      <div class="compact-result-stats">
+        <div class="compact-result-stat"><b id="successfulStat">${s.success}</b><span>Успешных тревог</span></div>
+        <div class="compact-result-stat"><b id="missedStat">${s.misses}</b><span>Пропущенных серий</span></div>
+        <div class="compact-result-stat"><b id="falseStat">${s.falseAlarms}</b><span>Ложных тревог</span></div>
+        <div class="compact-result-stat"><b id="reactionStat">${avg}</b><span>Рельса до тревоги</span></div>
+      </div>
+      <div class="compact-result-actions"><button class="btn" id="retryBtn">Повторить</button><button class="btn primary" id="menuBtn">Выбрать уровень</button></div>`, false, false);
+    $('retryBtn').onclick = () => startLevel(s.level);
+    $('menuBtn').onclick = welcome;
+  }
+  $("inspectBtn").onclick = () => inspect(selectedId);
+  $("alarmBtn").onclick = showAlarm;
+  $("pauseBtn").onclick = pause;
+  $("resumeBtn").onclick = pause;
+  $("endBtn").onclick = confirmEnd;
+  $("helpBtn").onclick = () => showHelp();
+  $("journalBtn").onclick = showJournal;
+  $("closeModal").onclick = () => {
+    if (modalType === "help" && helpReturn === "welcome") welcome();
+    else closeModal();
+  };
+  $("modal").onclick = (e) => {
+    if (e.target === $("modal") && !["welcome", "result"].includes(modalType)) {
+      if (modalType === "help" && helpReturn === "welcome") welcome();
+      else closeModal();
+    }
+  };
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Tab" && modalType) {
+      const f = $("dialog").querySelectorAll(
+          'button:not(:disabled),input:not(:disabled),[tabindex="0"]',
+        ),
+        arr = [...f].filter((el) => el.getClientRects().length);
+      if (!arr.length) return;
+      const first = arr[0],
+        last = arr.at(-1);
+      if (!arr.includes(document.activeElement)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      } else if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+      return;
+    }
+    if (e.key === "Escape") {
+      if (modalType === "help" && helpReturn === "welcome") welcome();
+      else closeModal();
+      return;
+    }
+    if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+    if (!state?.running) return;
+    if (e.code === "Space" && !modalType) {
+      e.preventDefault();
+      pause();
+    }
+    if (!modalType && (e.code === "KeyI" || e.code === "KeyA")) {
+      e.preventDefault();
+      if (e.code === "KeyI") inspect(selectedId);
+      else showAlarm();
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) return;
+    if (state?.running && !state.paused && state.pauses < 3) {
+      pause();
+      log("Автопауза: вкладка скрыта.");
+    } else if (state?.running && !state.paused) {
+      log("Вкладка скрыта. Свободных пауз нет — продолжите контроль при возвращении.");
+    }
+    lastFrame = performance.now();
+  });
+  window.addEventListener("resize", () => {
+    if (modalType === "inspect") drawInspect();
+  });
+  setupButtons();resize();requestAnimationFrame(tick);welcome();
+})();
+
+</script>
+  </body>
+</html>
